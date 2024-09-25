@@ -1,7 +1,17 @@
 import os
 import re
 from PIL import Image
-from tkinter import Tk, Label, Button, filedialog, messagebox, IntVar, Entry
+from tkinter import (
+    Tk,
+    Label,
+    Button,
+    filedialog,
+    messagebox,
+    StringVar,
+    IntVar,
+    Entry,
+    Radiobutton,
+)
 from tkinter.simpledialog import askstring
 from tkinter import ttk
 
@@ -28,19 +38,24 @@ def extract_image_number(file_name):
     )  # Non-matching files are sorted last
 
 
-def convert_all_chapters_to_pdf(main_folder, output_pdf, pages_per_pdf, progress_bar):
+def convert_all_chapters_to_pdf(
+    main_folder, output_pdf, split_by, split_value, progress_bar
+):
     """
-    Combines all images from all chapter folders into one or more PDFs,
-    ensuring correct order even if image filenames restart from '1' in each chapter.
+    Combines all images from chapter folders into one or more PDFs, ensuring correct order.
+    Optionally splits the output into multiple PDFs either by number of pages or number of chapters.
 
     Parameters:
         main_folder (str): The path to the main folder containing chapter subfolders.
         output_pdf (str): The base name for the output PDF file.
-        pages_per_pdf (int): The maximum number of pages per PDF.
+        split_by (str): Either 'pages' or 'chapters' depending on user choice.
+        split_value (int): Max pages or chapters per PDF depending on the chosen split type.
         progress_bar (ttk.Progressbar): The progress bar to update during the process.
     """
     all_images = []
     total_images = 0
+    total_chapters = 0
+    pdf_part = 1  # Track PDF parts if splitting is needed
 
     # Get all chapter folders and sort them numerically
     chapter_folders = [
@@ -60,8 +75,6 @@ def convert_all_chapters_to_pdf(main_folder, output_pdf, pages_per_pdf, progress
             for f in os.listdir(chapter_path)
             if f.lower().endswith((".png", ".jpg", ".jpeg", ".bmp", ".tiff"))
         ]
-
-        # Sort image files by their numeric filename to ensure correct order
         image_files.sort(key=extract_image_number)
 
         # Append full paths
@@ -76,43 +89,49 @@ def convert_all_chapters_to_pdf(main_folder, output_pdf, pages_per_pdf, progress
             except Exception as e:
                 print(f"Error opening {img_path}: {e}")
 
-    if total_images > 0:
-        # Set up progress bar
-        progress_bar["maximum"] = total_images
-        progress_bar["value"] = 0
+        total_chapters += 1
 
-        # Handle splitting into multiple PDFs based on pages_per_pdf
-        pdf_part = 1
-        for start_idx in range(
-            0, total_images, pages_per_pdf if pages_per_pdf > 0 else total_images
-        ):
-            end_idx = start_idx + (pages_per_pdf if pages_per_pdf > 0 else total_images)
+        if split_by == "chapters" and total_chapters % split_value == 0:
+            save_pdf(all_images, f"{output_pdf}_part{pdf_part}.pdf", progress_bar)
+            all_images = []  # Reset for the next set of chapters
+            pdf_part += 1
+
+    # Handle any remaining images if splitting by chapters or pages
+    if all_images:
+        pdf_filename = (
+            f"{output_pdf}_part{pdf_part}.pdf" if pdf_part > 1 else f"{output_pdf}.pdf"
+        )
+        save_pdf(all_images, pdf_filename, progress_bar)
+
+    # If splitting by pages
+    if split_by == "pages" and total_images > 0:
+        for start_idx in range(0, total_images, split_value):
+            end_idx = min(start_idx + split_value, total_images)
             part_images = all_images[start_idx:end_idx]
+            pdf_filename = (
+                f"{output_pdf}_part{pdf_part}.pdf"
+                if split_value > 0
+                else f"{output_pdf}.pdf"
+            )
+            save_pdf(part_images, pdf_filename, progress_bar)
+            pdf_part += 1
 
-            # Determine the output PDF filename
-            if pages_per_pdf > 0:
-                pdf_filename = f"{output_pdf}_part{pdf_part}.pdf"
-            else:
-                pdf_filename = f"{output_pdf}.pdf"
-
-            # Save the PDF
-            try:
-                part_images[0].save(
-                    pdf_filename, save_all=True, append_images=part_images[1:]
-                )
-                print(f"PDF part {pdf_part} created: {pdf_filename}")
-                pdf_part += 1
-            except Exception as e:
-                messagebox.showerror("Error", f"Failed to create {pdf_filename}: {e}")
-                return
-
-            # Update progress bar
-            progress_bar["value"] += len(part_images)
-            progress_bar.update()
-
-        messagebox.showinfo("Success", "PDF(s) created successfully.")
-    else:
+    if total_images == 0:
         messagebox.showerror("Error", "No images found in the provided folders.")
+    else:
+        messagebox.showinfo("Success", "PDF(s) created successfully.")
+
+
+def save_pdf(images, pdf_filename, progress_bar):
+    """Helper function to save the images as PDF and update the progress bar."""
+    try:
+        images[0].save(pdf_filename, save_all=True, append_images=images[1:])
+        print(f"PDF created: {pdf_filename}")
+    except Exception as e:
+        messagebox.showerror("Error", f"Failed to create {pdf_filename}: {e}")
+        return
+    progress_bar["value"] += len(images)
+    progress_bar.update()
 
 
 def select_main_folder():
@@ -137,24 +156,24 @@ def ask_output_pdf():
         return None
 
 
-def start_conversion(progress_bar, pages_per_pdf_var):
-    """Start the conversion process."""
+def start_conversion(progress_bar, split_type_var, split_value_var):
+    """Start the conversion process based on user input."""
     main_folder = select_main_folder()
     if main_folder:
         output_pdf = ask_output_pdf()
         if output_pdf:
             try:
-                pages_per_pdf = int(pages_per_pdf_var.get())
-                if pages_per_pdf < 0:
+                split_value = int(split_value_var.get())
+                if split_value < 0:
                     raise ValueError
             except ValueError:
                 messagebox.showerror(
                     "Error",
-                    "Please enter a valid number for pages per PDF (0 or positive integer).",
+                    "Please enter a valid number for split value (positive integer).",
                 )
                 return
             convert_all_chapters_to_pdf(
-                main_folder, output_pdf, pages_per_pdf, progress_bar
+                main_folder, output_pdf, split_type_var.get(), split_value, progress_bar
             )
 
 
@@ -162,7 +181,7 @@ def start_conversion(progress_bar, pages_per_pdf_var):
 def create_gui():
     root = Tk()
     root.title("Manga to PDF Converter")
-    root.geometry("500x300")
+    root.geometry("500x350")
     root.resizable(False, False)
 
     title_label = Label(
@@ -170,20 +189,28 @@ def create_gui():
     )
     title_label.pack(pady=10)
 
-    # Frame for pages per PDF
-    input_frame = ttk.Frame(root)
-    input_frame.pack(pady=10)
+    # Frame for split options
+    split_frame = ttk.Frame(root)
+    split_frame.pack(pady=10)
 
-    pages_label = Label(
-        input_frame, text="Max Pages per PDF (0 = No Split):", font=("Helvetica", 12)
-    )
-    pages_label.grid(row=0, column=0, padx=5, pady=5, sticky="e")
+    split_type_var = StringVar(
+        value="pages"
+    )  # Use StringVar instead of IntVar for string values
+    Radiobutton(
+        split_frame, text="Split by Pages", variable=split_type_var, value="pages"
+    ).grid(row=0, column=0, padx=10)
+    Radiobutton(
+        split_frame, text="Split by Chapters", variable=split_type_var, value="chapters"
+    ).grid(row=0, column=1, padx=10)
 
-    pages_per_pdf_var = IntVar(value=0)
-    pages_entry = Entry(
-        input_frame, textvariable=pages_per_pdf_var, font=("Helvetica", 12), width=10
+    split_label = Label(split_frame, text="Enter max pages/chapters per PDF:")
+    split_label.grid(row=1, column=0, padx=10)
+
+    split_value_var = IntVar(value=0)
+    split_entry = Entry(
+        split_frame, textvariable=split_value_var, font=("Helvetica", 12), width=10
     )
-    pages_entry.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+    split_entry.grid(row=1, column=1, padx=10)
 
     # Progress Bar
     progress_label = Label(root, text="Progress:", font=("Helvetica", 12))
@@ -198,7 +225,7 @@ def create_gui():
     convert_button = Button(
         root,
         text="Select Folder and Convert",
-        command=lambda: start_conversion(progress_bar, pages_per_pdf_var),
+        command=lambda: start_conversion(progress_bar, split_type_var, split_value_var),
         font=("Helvetica", 14),
         bg="#4CAF50",
         fg="white",
