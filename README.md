@@ -1,41 +1,39 @@
-# 📖 Manga to PDF Converter
+✨ **Overview**
 
-## ✨ Overview
+The Manga to PDF Converter is a simple yet powerful tool designed to turn your manga chapters (organized as images) into PDF files. You can merge all chapters into one big PDF or split them into multiple PDFs based on your preference for pages or chapters.
 
-The **Manga to PDF Converter** is a simple yet powerful tool designed to turn your manga chapters (organized as images) into PDF files. You can merge all chapters into one big PDF or split them into multiple PDFs based on the number of pages you prefer.
+🌟 **Key Features:**
 
-### 🌟 Key Features:
 - 📑 **Merge Chapters:** Combine all images into a single PDF.
-- ✂️ **Split Pages:** Option to split the output into multiple PDFs after a set number of pages.
+- ✂️ **Split Options:** 
+  - **Split Pages:** Option to split the output into multiple PDFs after a set number of pages.
+  - **Split Chapters:** Option to create separate PDFs for each chapter.
 - 🗂 **Automatic Sorting:** Images and chapters are ordered correctly, even if the file names restart within each chapter.
 - ⏳ **Progress Tracking:** Watch your progress with a handy progress bar!
 
----
+🛠 **How to Use**
 
-## 🛠 How to Use
+1. 🖱 **Launch the Application:**
+   - Double-click the executable (MangaToPDFConverter.exe) to start the application.
 
-1. **🖱 Launch the Application**:
-   - Double-click the executable (`MangaToPDFConverter.exe`) to start the application.
+2. 📏 **Set Max Pages per PDF:**
+   - Enter the number of pages you want per PDF.
+   - If you want a single PDF, enter 0 (all pages combined).
+   - Choose whether to split by pages or by chapters using the provided toggle option.
 
-2. **📏 Set Max Pages per PDF**:
-   - Enter the number of pages you want per PDF. 
-   - If you want a single PDF, enter `0` (all pages combined).
+3. 📂 **Select the Manga Folder:**
+   - Click "Select Folder and Convert" to choose the folder containing all your chapter subfolders. The subfolders should be named in a consistent format (e.g., c131, c132, etc.).
 
-3. **📂 Select the Manga Folder**:
-   - Click "Select Folder and Convert" to choose the folder containing all your chapter subfolders. The subfolders should be named in a consistent format (e.g., `c131`, `c132`, etc.).
+4. 📝 **Name Your Output PDFs:**
+   - After selecting the folder, you’ll be asked to name your output PDF(s).
+   - If you set a page limit, multiple PDFs will be created with numbered parts (e.g., MyManga_part1.pdf, MyManga_part2.pdf, etc.).
+   - If no page limit is set, only one PDF will be generated (e.g., MyManga.pdf).
 
-4. **📝 Name Your Output PDFs**:
-   - After selecting the folder, you’ll be asked to name your output PDF(s). 
-   - If you set a page limit, multiple PDFs will be created with numbered parts (e.g., `MyManga_part1.pdf`, `MyManga_part2.pdf`, etc.).
-   - If no page limit is set, only one PDF will be generated (e.g., `MyManga.pdf`).
-
-5. **📊 Progress Bar**:
-   - The progress bar shows the conversion status. 
+5. 📊 **Progress Bar:**
+   - The progress bar shows the conversion status.
    - Once done, you’ll see a confirmation message!
 
----
-
-## 🗂 Folder and Image Naming Convention
+🗂 **Folder and Image Naming Convention**
 
 For the best experience, make sure your manga folder structure and image naming are organized as follows:
 main/ ├── c131/ │ ├── 001.jpg │ ├── 002.jpg │ └── ... ├── c132/ │ ├── 001.jpg │ └── ... └── c133/ ├── 001.jpg ├── 002.jpg └── ...
