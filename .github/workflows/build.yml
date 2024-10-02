@@ -45,13 +45,14 @@ jobs:
         id: create_tag
         run: |
           TAG_NAME="v${{ github.run_number }}"
+          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
           git tag $TAG_NAME
           git push origin $TAG_NAME
 
       - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ steps.create_tag.outputs.TAG_NAME }}  # Change to tag_name
+          tag_name: ${{ env.TAG_NAME }}  # Use env variable
           files: output/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
