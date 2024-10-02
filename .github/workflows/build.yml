@@ -15,44 +15,46 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: '3.8'  # Adjust if necessary
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt  # Install dependencies
+          pip install -r requirements.txt
 
       - name: Build with PyInstaller
         run: |
           pip install pyinstaller
-          pyinstaller --onefile --name manga_to_pdf mangatopdf.py  # Build the executable
-          
-      - name: Archive the executable
+          pyinstaller --onefile --name manga_to_pdf mangatopdf.py
+
+      - name: Prepare Release Asset
         run: |
-          mkdir output
-          if [ "${{ matrix.os }}" == "windows-latest" ]; then
-            move dist\manga_to_pdf.exe output\
+          mkdir release-asset
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            mv dist/manga_to_pdf.exe release-asset/manga_to_pdf-windows.exe
           else
-            mv dist/manga_to_pdf output/
+            mv dist/manga_to_pdf release-asset/manga_to_pdf-linux
           fi
+        shell: bash
 
       - name: Create Git Tag
-        id: create_tag
         run: |
           TAG_NAME="v${{ github.run_number }}"
           echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
+          git config user.name github-actions
+          git config user.email github-actions@github.com
           git tag $TAG_NAME
           git push origin $TAG_NAME
 
       - name: Publish Release
         uses: softprops/action-gh-release@v1
         with:
-          tag_name: ${{ env.TAG_NAME }}  # Use env variable
-          files: output/*
+          tag_name: ${{ env.TAG_NAME }}
+          files: release-asset/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
