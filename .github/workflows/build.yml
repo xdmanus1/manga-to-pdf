@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write  # Allows the workflow to create tags and publish releases
+  contents: write
 
 jobs:
   build:
@@ -16,11 +16,13 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8'  # Adjust if necessary
+          python-version: '3.8'
 
       - name: Install dependencies
         run: |
@@ -32,42 +34,56 @@ jobs:
           pip install pyinstaller
           pyinstaller --onefile --name manga_to_pdf mangatopdf.py
 
+      - name: Determine latest version
+        id: get_version
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0")
+          CURRENT_VERSION=${LATEST_TAG#v}
+          NEW_VERSION=$((CURRENT_VERSION + 1))
+          echo "NEW_VERSION=${NEW_VERSION}" >> $GITHUB_ENV
+        shell: bash
+
       - name: Prepare Release Asset
         run: |
           mkdir release-asset
           if [ "${{ runner.os }}" == "Windows" ]; then
-            mv dist/manga_to_pdf.exe release-asset/manga_to_pdf-windows.exe
+            mv dist/manga_to_pdf.exe release-asset/manga_to_pdf-v${{ env.NEW_VERSION }}-windows.exe
           else
-            mv dist/manga_to_pdf release-asset/manga_to_pdf-linux
-            chmod +x release-asset/manga_to_pdf-linux
+            mv dist/manga_to_pdf release-asset/manga_to_pdf-v${{ env.NEW_VERSION }}-linux
+            chmod +x release-asset/manga_to_pdf-v${{ env.NEW_VERSION }}-linux
           fi
         shell: bash
 
       - name: Create Release Description
         run: |
-          echo "Manga to PDF Converter - v${{ github.run_number }}" > release_description.md
+          echo "Manga to PDF Converter - v${{ env.NEW_VERSION }}-${{ runner.os }}" > release_description.md
           echo "" >> release_description.md
-          echo "This release includes executables for Windows and Linux." >> release_description.md
+          echo "This release includes the executable for ${{ runner.os }}." >> release_description.md
           echo "" >> release_description.md
-          echo "## Windows" >> release_description.md
-          echo "Download the 'manga_to_pdf-windows.exe' file and run it directly." >> release_description.md
-          echo "" >> release_description.md
-          echo "## Linux" >> release_description.md
-          echo "1. Download the 'manga_to_pdf-linux' file." >> release_description.md
-          echo "2. Open a terminal in the directory containing the downloaded file." >> release_description.md
-          echo "3. Run the program with: \`./manga_to_pdf-linux\`" >> release_description.md
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            echo "## Windows" >> release_description.md
+            echo "1. Download the 'manga_to_pdf-v${{ env.NEW_VERSION }}-windows.exe' file." >> release_description.md
+            echo "2. Double-click the downloaded file or run it from the command prompt:" >> release_description.md
+            echo "   \`manga_to_pdf-v${{ env.NEW_VERSION }}-windows.exe\`" >> release_description.md
+          else
+            echo "## Linux" >> release_description.md
+            echo "1. Download the 'manga_to_pdf-v${{ env.NEW_VERSION }}-linux' file." >> release_description.md
+            echo "2. Open a terminal in the directory containing the downloaded file." >> release_description.md
+            echo "3. Run the program with: \`./manga_to_pdf-v${{ env.NEW_VERSION }}-linux\`" >> release_description.md
+          fi
           echo "" >> release_description.md
           echo "For more details, please refer to the project documentation." >> release_description.md
         shell: bash
 
       - name: Create Git Tag
         run: |
-          TAG_NAME="v${{ github.run_number }}"
+          TAG_NAME="v${{ env.NEW_VERSION }}-${{ runner.os }}"
           echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
           git config user.name github-actions
           git config user.email github-actions@github.com
           git tag $TAG_NAME
           git push origin $TAG_NAME
+        shell: bash
 
       - name: Publish Release
         uses: softprops/action-gh-release@v1
