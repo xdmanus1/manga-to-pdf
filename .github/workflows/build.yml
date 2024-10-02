@@ -39,7 +39,25 @@ jobs:
             mv dist/manga_to_pdf.exe release-asset/manga_to_pdf-windows.exe
           else
             mv dist/manga_to_pdf release-asset/manga_to_pdf-linux
+            chmod +x release-asset/manga_to_pdf-linux
           fi
+        shell: bash
+
+      - name: Create Release Description
+        run: |
+          echo "Manga to PDF Converter - v${{ github.run_number }}" > release_description.md
+          echo "" >> release_description.md
+          echo "This release includes executables for Windows and Linux." >> release_description.md
+          echo "" >> release_description.md
+          echo "## Windows" >> release_description.md
+          echo "Download the 'manga_to_pdf-windows.exe' file and run it directly." >> release_description.md
+          echo "" >> release_description.md
+          echo "## Linux" >> release_description.md
+          echo "1. Download the 'manga_to_pdf-linux' file." >> release_description.md
+          echo "2. Open a terminal in the directory containing the downloaded file." >> release_description.md
+          echo "3. Run the program with: \`./manga_to_pdf-linux\`" >> release_description.md
+          echo "" >> release_description.md
+          echo "For more details, please refer to the project documentation." >> release_description.md
         shell: bash
 
       - name: Create Git Tag
@@ -55,6 +73,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ env.TAG_NAME }}
+          body_path: release_description.md
           files: release-asset/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
