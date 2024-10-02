@@ -32,7 +32,12 @@ jobs:
       - name: Build with PyInstaller
         run: |
           pip install pyinstaller
-          pyinstaller --onefile --name manga_to_pdf mangatopdf.py
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            pyinstaller --onefile --noconsole --name manga_to_pdf mangatopdf.py
+          else
+            pyinstaller --onefile --name manga_to_pdf mangatopdf.py
+          fi
+        shell: bash
 
       - name: Determine latest version
         id: get_version
@@ -63,13 +68,21 @@ jobs:
           if [ "${{ runner.os }}" == "Windows" ]; then
             echo "## Windows" >> release_description.md
             echo "1. Download the 'manga_to_pdf-v${{ env.NEW_VERSION }}-windows.exe' file." >> release_description.md
-            echo "2. Double-click the downloaded file or run it from the command prompt:" >> release_description.md
-            echo "   \`manga_to_pdf-v${{ env.NEW_VERSION }}-windows.exe\`" >> release_description.md
+            echo "2. Double-click the downloaded file to run the application." >> release_description.md
+            echo "   The application will start without opening a command prompt window." >> release_description.md
           else
             echo "## Linux" >> release_description.md
             echo "1. Download the 'manga_to_pdf-v${{ env.NEW_VERSION }}-linux' file." >> release_description.md
             echo "2. Open a terminal in the directory containing the downloaded file." >> release_description.md
-            echo "3. Run the program with: \`./manga_to_pdf-v${{ env.NEW_VERSION }}-linux\`" >> release_description.md
+            echo "3. Make the file executable (if it isn't already):" >> release_description.md
+            echo "   \`chmod +x manga_to_pdf-v${{ env.NEW_VERSION }}-linux\`" >> release_description.md
+            echo "4. Run the program with:" >> release_description.md
+            echo "   \`./manga_to_pdf-v${{ env.NEW_VERSION }}-linux\`" >> release_description.md
+            echo "" >> release_description.md
+            echo "Note: If you encounter any issues with the Tkinter UI, ensure you have the following packages installed:" >> release_description.md
+            echo "- On Ubuntu/Debian: \`sudo apt-get install python3-tk\`" >> release_description.md
+            echo "- On Fedora: \`sudo dnf install python3-tkinter\`" >> release_description.md
+            echo "- On Arch Linux: \`sudo pacman -S tk\`" >> release_description.md
           fi
           echo "" >> release_description.md
           echo "For more details, please refer to the project documentation." >> release_description.md
