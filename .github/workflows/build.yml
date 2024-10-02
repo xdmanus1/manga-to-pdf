@@ -3,6 +3,9 @@ name: Build and Release Manga to PDF
 on:
   workflow_dispatch:
 
+permissions:
+  contents: write  # Allows the workflow to create tags and publish releases
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
